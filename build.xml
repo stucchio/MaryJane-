@@ -1,0 +1,32 @@
+<project name="maryjane" default="tserver" basedir=".">
+  <description>Time Server Tutorial</description>
+
+  <property name="src" location="src" />
+  <property name="gen" location="gen-java" />
+  <property name="build" location="build" />
+  <property name="cpath" location="/usr/local/lib/libthrift.jar:/usr/local/lib/slf4j-api-1.5.11.jar" />
+
+  <target name="init">
+    <tstamp />
+    <mkdir dir="${build}"/>
+  </target>
+
+  <target name="compile" depends="init">
+    <javac srcdir="${gen}" destdir="${build}" classpath="${cpath}" >
+      <compilerarg value="-Xlint:deprecation"/>
+    </javac>
+    <javac srcdir="${src}" destdir="${build}" classpath="${cpath}:${gen}" >
+      <compilerarg value="-Xlint:deprecation"/>
+    </javac>
+  </target>
+
+  <target name="tserver" depends="compile">
+    <jar jarfile="tserver.jar" basedir="${build}"/>
+  </target>
+
+  <target name="clean">
+    <delete dir="${build}" />
+    <delete file="tserver.jar" />
+  </target>
+
+</project>
