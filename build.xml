@@ -4,7 +4,7 @@
   <property name="src" location="src" />
   <property name="gen" location="gen-java" />
   <property name="build" location="build" />
-  <property name="cpath" location="/usr/local/lib/libthrift.jar:/usr/local/lib/slf4j-api-1.5.11.jar" />
+  <property name="cpath" location="/usr/local/lib/libthrift.jar" />
 
   <target name="init">
     <tstamp />
@@ -20,8 +20,8 @@
     </javac>
   </target>
 
-  <target name="tserver" depends="compile">
-    <jar jarfile="tserver.jar" basedir="${build}"/>
+  <target name="maryjane" depends="compile">
+    <jar jarfile="maryjane.jar" basedir="${build}"/>
   </target>
 
   <target name="clean">

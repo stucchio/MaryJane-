@@ -11,7 +11,7 @@ class MaryJaneServerImpl implements MaryJane.Iface
     }
 
     @Override
-    public long addRecord(String key, String value) throws TException {
+    public long addRecord(String streamname, String key, String value) throws TException {
         long time = System.currentTimeMillis();
         System.out.println("Current time : "+time);
         return time;
