@@ -1,4 +1,4 @@
-package org.styloot.maryjane;
+package org.styloot.maryjane.thriftserver;
 
 import java.util.*;
 import org.apache.thrift.*;
