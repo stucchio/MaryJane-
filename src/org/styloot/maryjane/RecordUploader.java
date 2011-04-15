@@ -30,10 +30,38 @@ public class RecordUploader {
 	RemoteLocation loc = locations.get(nm);
 	File stagedFile = new File(loc.stagingArea(), remoteName);
 	if (!inFile.renameTo(stagedFile)) {
-	    log.error("Unable to copy file " + inFile + " to staging area " + loc.stagingArea() + ". Data may NOT be committed to the database.");
+	    log.error("Unable to copy file " + inFile + " to staging area " + stagedFile + ". Data may NOT be committed to the database.");
+	    return;
 	}
-	if (!queue.offer(new UploadRequest(loc, stagedFile, remoteName), QUEUE_OFFER_DELAY, TimeUnit.MILLISECONDS)) {
+	log.debug("Successfully copied file " + inFile + " to " + stagedFile);
+	UploadRequest req = new UploadRequest(loc, stagedFile, remoteName);
+	if (!queue.offer(req, QUEUE_OFFER_DELAY, TimeUnit.MILLISECONDS)) {
 	    log.error("Queue is saturated! Unable to commit data in " + inFile + ". Left in staging area. Data may NOT be committed to the database.");
+	    return;
+	}
+	log.info("Accepted " + req);
+    }
+
+    private class SubmissionThread implements Runnable {
+	public void run() {
+	    log.info("Starting submitter thread.");
+	    UploadRequest req;
+	    while (true) {
+		try {
+		    req = queue.take();
+		} catch (InterruptedException e) {
+		    log.error("Submission thread interrupted.");
+		    return;
+		}
+
+		log.info("Attempting to upload file " + req.remoteName + " to location " + req.loc);
+		try {
+		    uploadFile(req);
+		} catch (IOException e) {
+		    log.error("Received IOException while attempting to upload file " + req.remoteName + " to " + req.loc + ". Will retry.");
+		}
+
+	    }
 	}
     }
 
@@ -54,6 +82,10 @@ public class RecordUploader {
 	    loc = l;
 	    file = f;
 	    remoteName = rn;
+	}
+
+	public String toString() {
+	    return "UploadRequest(loc=" + loc + ", file=" + file + ", remoteName=" + remoteName + ")";
 	}
     }
 
