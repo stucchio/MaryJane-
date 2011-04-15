@@ -12,7 +12,7 @@ import org.apache.log4j.*;
 public class StreamHandler {
     private static final Logger log = Logger.getLogger(StreamHandler.class);
 
-    private Path remotePath;
+    private RecordUploader uploader;
     private String namePrefix;
     private boolean useCompression;
     private String name;
@@ -25,9 +25,9 @@ public class StreamHandler {
 
     private static long OFFER_TIMEOUT = 500;
 
-    public StreamHandler(String myName, Path myRemotePath, String myPrefix, boolean compress, File localDir, boolean noBuffer) throws IOException {
+    public StreamHandler(String myName, RecordUploader myUploader, String myPrefix, boolean compress, File localDir, boolean noBuffer) throws IOException {
 	name = myName;
-        remotePath = myRemotePath;
+	uploader = myUploader;
         namePrefix = myPrefix;
         useCompression = compress;
 	noMemoryBuffer = noBuffer;
@@ -48,17 +48,15 @@ public class StreamHandler {
 	return time;
     }
 
-    public synchronized void flush() throws IOException {
-	String remoteFileNameString = fileNameString();
-	Path pathToFlush = new Path(remotePath, remoteFileNameString);
-	log.info("Streamhandler " + name + " flushing to " + pathToFlush);
+    public synchronized void flush() throws IOException, InterruptedException {
+	log.info("Streamhandler " + name + " flushing file.");
 	outStream.close();
 	if (bufferedOutputStream != null)
 	    bufferedOutputStream.close();
 	fileOutputStream.close();
-	FileSystem remoteFileSystem = remotePath.getFileSystem(new Configuration());
 
-	remoteFileSystem.moveFromLocalFile(new Path(bufferFile.getAbsolutePath()), pathToFlush);
+	uploader.queueFileForUpload(name, bufferFile, fileNameString());
+	newBufferFile();
     }
 
     private static SimpleDateFormat fileDateFormat = new SimpleDateFormat("yyyy_MM_dd_'at'_HH_mm_ss_z");
@@ -119,10 +117,18 @@ public class StreamHandler {
 	return s;
     }
 
-    public static void main(String[] args) throws IOException, StreamHandlerException {
-	StreamHandler s = new StreamHandler("baz", new Path("s3://ID:SECRETKEY@BUCKET/"), "bazrecord", true, new File("/tmp/maryjane"), true);
-	s.addRecord("foo", "bar");
-	s.addRecord("biz", "baz");
-	s.flush();
+    public static void main(String[] args) throws IOException, StreamHandlerException, InterruptedException {
+	RecordUploader r = new RecordUploader(new File("/tmp/staging"));
+	r.addRemoteLocation("baz", "s3n://ID:SECRET@BUCKET");
+
+	StreamHandler s = new StreamHandler("baz", r, "bazrecord", true, new File("/tmp/maryjane"), true);
+	for (int i=0;i<10;i++) {
+	    for (int j=0;j<500;j++) {
+		s.addRecord(i + "," + j, UUID.randomUUID().toString());
+	    }
+	    s.flush();
+	}
+
+
     }
 }
