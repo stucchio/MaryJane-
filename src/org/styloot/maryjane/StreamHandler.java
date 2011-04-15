@@ -119,7 +119,7 @@ public class StreamHandler {
 
     public static void main(String[] args) throws IOException, StreamHandlerException, InterruptedException {
 	RecordUploader r = new RecordUploader(new File("/tmp/staging"));
-	r.addRemoteLocation("baz", "s3n://ID:SECRET@BUCKET");
+	r.addRemoteLocation("baz", args[0]);
 
 	StreamHandler s = new StreamHandler("baz", r, "bazrecord", true, new File("/tmp/maryjane"), true);
 	for (int i=0;i<10;i++) {
