@@ -34,6 +34,12 @@ public class MaryJaneWriter {
         return sh.submit();
     }
 
+    public void syncAll() throws IOException, InterruptedException {
+	for (StreamHandler sh : streams.values()) {
+	    sh.submit();
+	}
+    }
+
     public void addStreamHandler(String name, String prefix, boolean compress, boolean noBuffer, RemoteLocation remoteLocation) throws IOException {
 	if (streams.containsKey(name))
 	    throw new IndexOutOfBoundsException("MaryJaneWriter already has a StreamHandler with name " + name);
