@@ -12,15 +12,12 @@ import org.apache.log4j.*;
 public class FileUploader {
     private static final Logger log = Logger.getLogger(FileUploader.class);
 
-    private final File stagingArea;
-
     private BlockingQueue<UploadRequest> queue = new ArrayBlockingQueue<UploadRequest>(1024, false);
 
     public static long QUEUE_OFFER_DELAY = 500;
     private Thread uploadThread;
 
-    public FileUploader(File myStagingArea) throws IOException {
-	stagingArea = myStagingArea;
+    public FileUploader() throws IOException {
 	uploadThread = new Thread(new SubmissionThread());
 	uploadThread.start();
     }

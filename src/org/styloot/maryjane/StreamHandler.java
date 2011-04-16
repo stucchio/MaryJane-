@@ -217,7 +217,7 @@ public class StreamHandler {
     }
 
     public static void main(String[] args) throws IOException, StreamHandlerException, InterruptedException {
-	FileUploader r = new FileUploader(new File("/tmp/staging"));
+	FileUploader r = new FileUploader();
 
 	RemoteLocation loc = new RemoteLocation("baz", args[0]);
 	StreamHandler s = new StreamHandler("baz", r, "bazrecord", true, new File("/tmp/maryjane"), true, loc);
