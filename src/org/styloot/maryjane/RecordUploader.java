@@ -17,9 +17,12 @@ public class RecordUploader {
     private BlockingQueue<UploadRequest> queue = new ArrayBlockingQueue<UploadRequest>(1024, false);
 
     public static long QUEUE_OFFER_DELAY = 500;
+    private Thread uploadThread;
 
     public RecordUploader(File myStagingArea) throws IOException {
 	stagingArea = myStagingArea;
+	uploadThread = new Thread(new SubmissionThread());
+	uploadThread.start();
     }
 
     public void addRemoteLocation(String nm, String rp) {
@@ -42,6 +45,10 @@ public class RecordUploader {
 	log.info("Accepted " + req);
     }
 
+    public void finish() throws InterruptedException {
+	uploadThread.interrupt();
+    }
+
     private class SubmissionThread implements Runnable {
 	public void run() {
 	    log.info("Starting submitter thread.");
@@ -53,14 +60,20 @@ public class RecordUploader {
 		    log.error("Submission thread interrupted.");
 		    return;
 		}
+		if (req != null)
+		    transmitFile(req);
+		else
+		    break;
+	    }
+	}
 
-		log.info("Attempting to upload file " + req.remoteName + " to location " + req.loc);
-		try {
-		    uploadFile(req);
-		} catch (IOException e) {
-		    log.error("Received IOException while attempting to upload file " + req.remoteName + " to " + req.loc + ". Will retry.");
-		}
-
+	private void transmitFile(UploadRequest req) {
+	    log.info("Attempting to upload file " + req.remoteName + " to location " + req.loc.remotePath);
+	    try {
+		uploadFile(req);
+		log.info("Successfully uploaded file " + req.remoteName + " to location " + req.loc.remotePath);
+	    } catch (IOException e) {
+		log.error("Received IOException while attempting to upload file " + req.remoteName + " to " + req.loc + ". Will retry.");
 	    }
 	}
     }

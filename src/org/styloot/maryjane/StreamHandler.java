@@ -128,7 +128,5 @@ public class StreamHandler {
 	    }
 	    s.flush();
 	}
-
-
     }
 }
