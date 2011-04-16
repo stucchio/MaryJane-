@@ -25,19 +25,8 @@ public class RecordUploader {
 	uploadThread.start();
     }
 
-    public void addRemoteLocation(String nm, String rp) {
-	locations.put(nm, new RemoteLocation(nm, new Path(rp)));
-    }
-
-    public void queueFileForUpload(String nm, File inFile, String remoteName) throws InterruptedException {
-	RemoteLocation loc = locations.get(nm);
-	File stagedFile = new File(loc.stagingArea(), remoteName);
-	if (!inFile.renameTo(stagedFile)) {
-	    log.error("Unable to copy file " + inFile + " to staging area " + stagedFile + ". Data may NOT be committed to the database.");
-	    return;
-	}
-	log.debug("Successfully copied file " + inFile + " to " + stagedFile);
-	UploadRequest req = new UploadRequest(loc, stagedFile, remoteName);
+    public void queueFileForUpload(File inFile, RemoteLocation loc, String remoteName) throws InterruptedException {
+	UploadRequest req = new UploadRequest(loc, inFile, remoteName);
 	if (!queue.offer(req, QUEUE_OFFER_DELAY, TimeUnit.MILLISECONDS)) {
 	    log.error("Queue is saturated! Unable to commit data in " + inFile + ". Left in staging area. Data may NOT be committed to the database.");
 	    return;
@@ -68,12 +57,12 @@ public class RecordUploader {
 	}
 
 	private void transmitFile(UploadRequest req) {
-	    log.info("Attempting to upload file " + req.remoteName + " to location " + req.loc.remotePath);
+	    log.info("Attempting to upload file " + req.file + " to location " + req.loc.remotePath);
 	    try {
 		uploadFile(req);
-		log.info("Successfully uploaded file " + req.remoteName + " to location " + req.loc.remotePath);
+		log.info("Successfully uploaded file " + req.file + " to location " + req.loc.remotePath);
 	    } catch (IOException e) {
-		log.error("Received IOException while attempting to upload file " + req.remoteName + " to " + req.loc + ". Will retry.");
+		log.error("Received IOException while attempting to upload file " + req.file + " to " + req.loc + ". Will retry.");
 	    }
 	}
     }
@@ -83,8 +72,6 @@ public class RecordUploader {
 	FileSystem remoteFileSystem = pathToFlush.getFileSystem(new Configuration());
 	remoteFileSystem.moveFromLocalFile(new Path(req.file.getAbsolutePath()), pathToFlush);
     }
-
-    private Map<String,RemoteLocation> locations = new HashMap<String,RemoteLocation>();
 
     private class UploadRequest {
 	public RemoteLocation loc;
@@ -99,22 +86,6 @@ public class RecordUploader {
 
 	public String toString() {
 	    return "UploadRequest(loc=" + loc + ", file=" + file + ", remoteName=" + remoteName + ")";
-	}
-    }
-
-    private class RemoteLocation {
-	public String name;
-	public Path remotePath;
-
-	public RemoteLocation(String nm, Path rp) {
-	    name = nm;
-	    remotePath = rp;
-	}
-
-	public File stagingArea() {
-	    File result = new File(stagingArea, name);
-	    result.mkdirs();
-	    return result;
 	}
     }
 }

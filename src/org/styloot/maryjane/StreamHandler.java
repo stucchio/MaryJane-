@@ -17,23 +17,33 @@ public class StreamHandler {
     private boolean useCompression;
     private String name;
     private final File localPath;
+    private final File localDataPath;
+    private final File localStagingPath;
     private boolean noMemoryBuffer = false;
     private File bufferFile;
     private PrintStream outStream;
+    private RemoteLocation remoteLocation;
 
     public long recordLimitBeforeFlush = -1;
 
     private static long OFFER_TIMEOUT = 500;
 
-    public StreamHandler(String myName, RecordUploader myUploader, String myPrefix, boolean compress, File localDir, boolean noBuffer) throws IOException {
+    public StreamHandler(String myName, RecordUploader myUploader, String myPrefix, boolean compress, File localDir, boolean noBuffer, RemoteLocation myRemoteLocation) throws IOException {
 	name = myName;
 	uploader = myUploader;
         namePrefix = myPrefix;
         useCompression = compress;
 	noMemoryBuffer = noBuffer;
+	remoteLocation = myRemoteLocation;
 
+	if (!localDir.exists())
+	    throw new IOException("Local directory " + localDir + " does not exist!");
         localPath = new File(localDir, namePrefix);
         localPath.mkdirs();
+	localDataPath = new File(localPath, "data");
+	localDataPath.mkdirs();
+	localStagingPath = new File(localPath, "staging");
+	localStagingPath.mkdirs();
 
 	newBufferFile();
     }
@@ -55,7 +65,8 @@ public class StreamHandler {
 	    bufferedOutputStream.close();
 	fileOutputStream.close();
 
-	uploader.queueFileForUpload(name, bufferFile, fileNameString());
+	File stagedFile = stageFile(bufferFile);
+	uploader.queueFileForUpload(stagedFile, remoteLocation, stagedFile.getName());
 	newBufferFile();
     }
 
@@ -81,12 +92,12 @@ public class StreamHandler {
     }
 
     private File getFileFromLocalDir() throws IOException {
-	File[] oldFiles = localPath.listFiles();
+	File[] oldFiles = dataPath().listFiles();
 	if (oldFiles.length > 0) {
 	    recordsWritten = countLines(oldFiles[0]);
 	    return oldFiles[0];
 	} else {
-	    return File.createTempFile(namePrefix, ".tsv", localPath);
+	    return File.createTempFile(namePrefix, ".tsv", dataPath());
 	}
     }
 
@@ -108,6 +119,25 @@ public class StreamHandler {
 	}
     };
 
+    private File stagingPath() {
+	return localStagingPath;
+    }
+
+    private File dataPath() {
+	return localDataPath;
+    }
+
+
+    private File stageFile(File inFile) throws IOException {
+	File stagedFile = new File(stagingPath(), fileNameString());
+	if (!inFile.renameTo(stagedFile)) {
+	    log.error("Unable to move file " + inFile + " to staging area " + stagedFile + ". Data may NOT be committed to the database.");
+	    throw new IOException("Unable to move file " + inFile + " to staging area " + stagedFile + ".");
+	}
+	log.debug("Successfully copied file " + inFile + " to " + stagedFile);
+	return stagedFile;
+    }
+
     private static String validateString(String s) throws StreamHandlerException {
 	if (s.indexOf("\n") != -1)
 	    throw new StreamHandlerException("String contained newline at " + s.indexOf("\n"));
@@ -119,9 +149,9 @@ public class StreamHandler {
 
     public static void main(String[] args) throws IOException, StreamHandlerException, InterruptedException {
 	RecordUploader r = new RecordUploader(new File("/tmp/staging"));
-	r.addRemoteLocation("baz", args[0]);
 
-	StreamHandler s = new StreamHandler("baz", r, "bazrecord", true, new File("/tmp/maryjane"), true);
+	RemoteLocation loc = new RemoteLocation("baz", args[0]);
+	StreamHandler s = new StreamHandler("baz", r, "bazrecord", true, new File("/tmp/maryjane"), true, loc);
 	for (int i=0;i<10;i++) {
 	    for (int j=0;j<500;j++) {
 		s.addRecord(i + "," + j, UUID.randomUUID().toString());
