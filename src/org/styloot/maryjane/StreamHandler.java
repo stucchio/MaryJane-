@@ -56,7 +56,7 @@ public class StreamHandler {
     }
 
     long recordsWritten = 0;
-    public synchronized long addRecord(String key, String value) throws StreamHandlerException, IOException {
+    public synchronized long addRecord(String key, String value) throws IOException {
 	validateString(key);
 	validateString(value);
 	outStream.println(key + "\t" + value);
@@ -72,7 +72,7 @@ public class StreamHandler {
 	return time;
     }
 
-    public synchronized void submit() throws IOException, InterruptedException {
+    public synchronized long submit() throws IOException, InterruptedException {
 	log.info(this.toString()  + " submitting file.");
 	outStream.close();
 	if (bufferedOutputStream != null)
@@ -83,6 +83,7 @@ public class StreamHandler {
 	uploader.queueFileForUpload(stagedFile, remoteLocation, stagedFile.getName());
 	newBufferFile();
 	lastSubmitTime = System.currentTimeMillis();
+	return lastSubmitTime;
     }
 
     private static SimpleDateFormat fileDateFormat = new SimpleDateFormat("yyyy_MM_dd_'at'_HH_mm_ss_z");
@@ -130,12 +131,6 @@ public class StreamHandler {
 	return count;
     }
 
-    public static class StreamHandlerException extends Exception {
-	StreamHandlerException(String s) {
-	    super(s);
-	}
-    };
-
     private File stagingPath() {
 	return localStagingPath;
     }
@@ -155,12 +150,12 @@ public class StreamHandler {
 	return stagedFile;
     }
 
-    private static String validateString(String s) throws StreamHandlerException {
+    private static String validateString(String s)  {
 	if (s.indexOf("\n") != -1)
-	    throw new StreamHandlerException("String contained newline at " + s.indexOf("\n"));
+	    throw new IllegalArgumentException("String contained newline at " + s.indexOf("\n"));
 
 	if ((s.indexOf("\t") != -1))
-	    throw new StreamHandlerException("String contained tab at " + s.indexOf("\t"));
+	    throw new IllegalArgumentException("String contained tab at " + s.indexOf("\t"));
 	return s;
     }
 
@@ -216,7 +211,7 @@ public class StreamHandler {
 	}
     }
 
-    public static void main(String[] args) throws IOException, StreamHandlerException, InterruptedException {
+    public static void main(String[] args) throws IOException, InterruptedException {
 	FileUploader r = new FileUploader();
 
 	RemoteLocation loc = new RemoteLocation("baz", args[0]);
