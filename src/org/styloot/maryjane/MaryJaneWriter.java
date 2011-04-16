@@ -7,18 +7,17 @@ import org.apache.hadoop.fs.*;
 import java.util.*;
 import java.io.*;
 
-public class MaryJaneDB {
+public class MaryJaneWriter {
     File localDir;
+    Map<String,StreamHandler> streams = new HashMap<String,StreamHandler>();
 
-    public MaryJaneDB(JSONObject conf, File myLocalDir) throws IOException {
+    public MaryJaneWriter(File myLocalDir) throws IOException {
 	localDir = myLocalDir;
 	if (!localDir.exists()) {
 	    throw new IOException("Local directory " + myLocalDir + " does not exist.");
 	}
-
     }
 
-    Map<String,StreamHandler> streams = new HashMap<String,StreamHandler>();
 
 
 }

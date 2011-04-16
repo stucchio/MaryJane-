@@ -12,7 +12,7 @@ import org.apache.log4j.*;
 public class StreamHandler {
     private static final Logger log = Logger.getLogger(StreamHandler.class);
 
-    private RecordUploader uploader;
+    private FileUploader uploader;
     private String namePrefix;
     private boolean useCompression;
     private String name;
@@ -31,7 +31,7 @@ public class StreamHandler {
 
     private static long OFFER_TIMEOUT = 500;
 
-    public StreamHandler(String myName, RecordUploader myUploader, String myPrefix, boolean compress, File localDir, boolean noBuffer, RemoteLocation myRemoteLocation) throws IOException {
+    public StreamHandler(String myName, FileUploader myUploader, String myPrefix, boolean compress, File localDir, boolean noBuffer, RemoteLocation myRemoteLocation) throws IOException {
 	name = myName;
 	uploader = myUploader;
         namePrefix = myPrefix;
@@ -217,7 +217,7 @@ public class StreamHandler {
     }
 
     public static void main(String[] args) throws IOException, StreamHandlerException, InterruptedException {
-	RecordUploader r = new RecordUploader(new File("/tmp/staging"));
+	FileUploader r = new FileUploader(new File("/tmp/staging"));
 
 	RemoteLocation loc = new RemoteLocation("baz", args[0]);
 	StreamHandler s = new StreamHandler("baz", r, "bazrecord", true, new File("/tmp/maryjane"), true, loc);

@@ -9,8 +9,8 @@ import java.util.concurrent.*;
 import java.io.*;
 import org.apache.log4j.*;
 
-public class RecordUploader {
-    private static final Logger log = Logger.getLogger(RecordUploader.class);
+public class FileUploader {
+    private static final Logger log = Logger.getLogger(FileUploader.class);
 
     private final File stagingArea;
 
@@ -19,7 +19,7 @@ public class RecordUploader {
     public static long QUEUE_OFFER_DELAY = 500;
     private Thread uploadThread;
 
-    public RecordUploader(File myStagingArea) throws IOException {
+    public FileUploader(File myStagingArea) throws IOException {
 	stagingArea = myStagingArea;
 	uploadThread = new Thread(new SubmissionThread());
 	uploadThread.start();
