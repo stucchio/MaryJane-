@@ -26,7 +26,7 @@ public class StreamHandler {
 
     public long recordLimitBeforeSubmit = -1;
     private long lastSubmitTime = 0;
-    private long submitInterval = -1;
+    private long submitInterval = 60*60*1000;
     private long recordsBeforeSubmit = -1;
 
     private static long OFFER_TIMEOUT = 500;
@@ -41,7 +41,7 @@ public class StreamHandler {
 
 	if (!localDir.exists())
 	    throw new IOException("Local directory " + localDir + " does not exist!");
-        localPath = new File(localDir, namePrefix);
+        localPath = new File(localDir, myName);
         localPath.mkdirs();
 	localDataPath = new File(localPath, "data");
 	localDataPath.mkdirs();
