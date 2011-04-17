@@ -20,12 +20,12 @@ public class Server {
     private int port;
     private MaryJaneWriter writer;
 
-    public Server(int myPort, File localPath, JSONObject json) throws IOException {
+    public Server(int myPort, File localPath, Path basePath, JSONObject json) throws IOException {
 	port = myPort;
 	log.info("Starting MaryJane server on port " + myPort);
 	System.out.println(json);
 	String filesystem = (String)json.get("filesystem");
-	Path basePath = new Path(filesystem);
+	//Path basePath = new Path(filesystem);
 	log.info("Connecting to remote filesystem " + basePath);
 
 	writer = new MaryJaneWriter(localPath);
@@ -97,6 +97,14 @@ public class Server {
 	return builder.toString();
     }
 
+    private static Path getPathRoot(Path path) {
+	Path parent = path.getParent();
+	if (parent == null)
+	    return path;
+	else
+	    return getPathRoot(parent);
+    }
+
     public static void main(String[] args) throws IOException {
  	int port = new Integer(args[0]);
 	File localPath = new File(args[1]);
@@ -107,8 +115,7 @@ public class Server {
 	System.out.println(configString);
 	JSONObject config = (JSONObject)JSONValue.parse(configString);
 
-
-        Server srv = new Server(port, localPath, config);
+        Server srv = new Server(port, localPath, getPathRoot(configPath), config);
         srv.start();
     }
 }
