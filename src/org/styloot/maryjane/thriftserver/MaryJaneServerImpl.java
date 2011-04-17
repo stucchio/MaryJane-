@@ -35,4 +35,16 @@ class MaryJaneServerImpl implements MaryJane.Iface
 	}
     }
 
+    @Override
+    public long syncAll() throws TException, MaryJaneException {
+	try {
+	    writer.syncAll();
+	} catch (IOException e) {
+	    throw new MaryJaneException("An internal server error occurred." + e);
+	} catch (InterruptedException e) {
+	    throw new MaryJaneException("An internal server error occurred." + e);
+	}
+	return System.currentTimeMillis();
+    }
+
 }
