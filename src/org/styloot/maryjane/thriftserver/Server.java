@@ -39,9 +39,17 @@ public class Server {
 	    String prefix = (String)stream.get("prefix");
 	    assertNotNull(prefix, "Parameter 'prefix' in stream " + name + " must not be null.");
 
+	    Path targetPath = new Path(basePath, remotePath);
 	    writer.addStreamHandler(name, prefix, false, false,
-				    new RemoteLocation(name, new Path(basePath, remotePath)));
+				    new RemoteLocation(name, targetPath));
 
+	    Long submitInterval = (Long)stream.get("submit_interval");
+	    if (submitInterval != null)
+		writer.setSubmitInterval(name, submitInterval);
+	    Long maxRecords = (Long)stream.get("max_records");
+	    if (maxRecords != null)
+		writer.setRecordsBeforeSubmit(name, maxRecords);
+	    log.info("Streaming data for streamname " + name + " to " + targetPath);
 	}
     }
 
