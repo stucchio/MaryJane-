@@ -14,8 +14,17 @@ Apache Thrift
 Installation
 ============
 
-    ./build.sh
-    cp maryjane.jar SOMEPLACE_IN_CLASSPATH
+The server installation is easy:
+
+    $ ./build.sh
+    $ cp build/maryjane.jar SOMEPLACE_IN_CLASSPATH
+
+The python client installation is similarly easy:
+
+    $ mv build/python-maryjane.tgz /tmp
+    $ cd /tmp
+    $ tar -xvzf python-maryjane.tgz
+    $ mv maryjane SOMEPLACE_IN_PYTHONPATH
 
 Usage
 =====
@@ -101,19 +110,11 @@ See the thrift file for reference. An example in python:
 Frequently Asked Questions
 ==========================
 
-* Why use MaryJane rather than Flume?
+* What about languages other than Java and Python?
 
-Simplicity. Compare this manual to Flume's manual.
+The interface is defined by Apache Thrift, so this should be easy. Just add an appropriate namespace to the thrift file, and run the command:
 
-http://archive.cloudera.com/cdh/3/flume/UserGuide/index.html
-
-Or simply compare code size. Maryjane is about 600 lines of code (including whitespace), 2800 if you include the size of the jsonsimple library which is embedded in it.
-
-* When is Flume a better choice than MaryJane?
-
-Flume has reliability guarantees. MaryJane does not. It would be a very bad idea to use MaryJane if it is vital that all records enter the database.
-
-Flume also has Cloudera support, which is probably useful for some people.
+    $ thrift --gen YOUR_LANG maryjane.thrift
 
 * Why is it called MaryJane?
 
@@ -123,3 +124,8 @@ http://en.wikipedia.org/wiki/Mary_Jane_(shoe)
 
 http://www.google.com/images?um=1&hl=en&tbm=isch&sa=X&ei=1fKqTfWUPOXUiAK9xIGODw&ved=0CDMQBSgA&q=mary+jane+shoe&spell=1&biw=1198&bih=675
 
+* How does MaryJane compare to Flume?
+
+MaryJane is a lot simpler. Compare this readme to Flume's manual, or compare code size. Maryjane is about 600 lines of code, 2800 if you include the size of the jsonsimple library which is embedded in it.
+
+Unlike MaryJane, Flume has reliability guarantees. It would be a very bad idea to use MaryJane if it is vital that all records enter the database. Cloudera also supports Flume, which can be handy.
