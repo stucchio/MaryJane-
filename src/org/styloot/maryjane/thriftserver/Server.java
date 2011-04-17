@@ -34,13 +34,22 @@ public class Server {
 	for (Object nameObj : streams.keySet()) {
 	    String name = (String)nameObj;
 	    JSONObject stream = (JSONObject)streams.get(name);
+
 	    String remotePath = (String)stream.get("path");
 	    assertNotNull(remotePath, "Parameter 'path' in stream " + name + " must not be null.");
 	    String prefix = (String)stream.get("prefix");
 	    assertNotNull(prefix, "Parameter 'prefix' in stream " + name + " must not be null.");
 
+	    Boolean compressFiles = (Boolean)stream.get("compress");
+	    if (compressFiles == null)
+		compressFiles = false;
+
+	    Boolean noBuffer = (Boolean)stream.get("no_buffer");
+	    if (noBuffer == null)
+		noBuffer = false;
+
 	    Path targetPath = new Path(basePath, remotePath);
-	    writer.addStreamHandler(name, prefix, false, false,
+	    writer.addStreamHandler(name, prefix, compressFiles, noBuffer,
 				    new RemoteLocation(name, targetPath));
 
 	    Long submitInterval = (Long)stream.get("submit_interval");
