@@ -2,12 +2,14 @@ package org.styloot.maryjane;
 
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.log4j.*;
 
 import java.util.*;
 import java.text.*;
 import java.util.concurrent.*;
 import java.io.*;
-import org.apache.log4j.*;
+
+import org.styloot.maryjane.gen.*;
 
 public class StreamHandler {
     private static final Logger log = Logger.getLogger(StreamHandler.class);
@@ -56,7 +58,7 @@ public class StreamHandler {
     }
 
     long recordsWritten = 0;
-    public synchronized long addRecord(String key, String value) throws IOException {
+    public synchronized long addRecord(String key, String value) throws IOException, MaryJaneFormatException {
 	validateString(key);
 	validateString(value);
 	outStream.println(key + "\t" + value);
@@ -150,12 +152,12 @@ public class StreamHandler {
 	return stagedFile;
     }
 
-    private static String validateString(String s)  {
+    private static String validateString(String s) throws MaryJaneFormatException  {
 	if (s.indexOf("\n") != -1)
-	    throw new IllegalArgumentException("String contained newline at " + s.indexOf("\n"));
+	    throw new MaryJaneFormatException("String '" + s + "' contained newline at character " + s.indexOf("\n"));
 
 	if ((s.indexOf("\t") != -1))
-	    throw new IllegalArgumentException("String contained tab at " + s.indexOf("\t"));
+	    throw new MaryJaneFormatException("String '" + s + "' contained tab at character " + s.indexOf("\t"));
 	return s;
     }
 
@@ -211,7 +213,7 @@ public class StreamHandler {
 	}
     }
 
-    public static void main(String[] args) throws IOException, InterruptedException {
+    public static void main(String[] args) throws IOException, InterruptedException, MaryJaneFormatException {
 	FileUploader r = new FileUploader();
 
 	RemoteLocation loc = new RemoteLocation("baz", args[0]);

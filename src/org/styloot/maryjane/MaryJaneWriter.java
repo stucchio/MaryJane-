@@ -5,6 +5,8 @@ import org.styloot.maryjane.jsonsimple.*;
 import org.apache.hadoop.fs.*;
 import org.apache.log4j.*;
 
+import org.styloot.maryjane.gen.*;
+
 import java.util.*;
 import java.io.*;
 
@@ -24,12 +26,12 @@ public class MaryJaneWriter {
         fileUploader = new FileUploader();
     }
 
-    public long addRecord(String streamname, String key, String value) throws IOException {
+    public long addRecord(String streamname, String key, String value) throws IOException, MaryJaneStreamNotFoundException, MaryJaneFormatException {
         StreamHandler sh = getStreamHandler(streamname);
         return sh.addRecord(key, value);
     }
 
-    public long sync(String streamname) throws IOException, InterruptedException {
+    public long sync(String streamname) throws IOException, InterruptedException, MaryJaneStreamNotFoundException{
         StreamHandler sh = getStreamHandler(streamname);
         return sh.submit();
     }
@@ -47,23 +49,23 @@ public class MaryJaneWriter {
         streams.put(name, sh);
     }
 
-    private StreamHandler getStreamHandler(String name) {
+    private StreamHandler getStreamHandler(String name) throws MaryJaneStreamNotFoundException {
         StreamHandler sh = streams.get(name);
         if (sh == null)
-            throw new IndexOutOfBoundsException("Could not find streamhandler for name " + name);
+            throw new MaryJaneStreamNotFoundException("Could not find streamhandler for name " + name);
         return sh;
     }
 
-    public void setRecordsBeforeSubmit(String streamname, long records) {
+    public void setRecordsBeforeSubmit(String streamname, long records) throws MaryJaneStreamNotFoundException {
         getStreamHandler(streamname).setRecordsBeforeSubmit(records);
     }
 
     //Set submit interval, in seconds.
-    public synchronized void setSubmitInterval(String streamname, long submitInterval) {
+    public synchronized void setSubmitInterval(String streamname, long submitInterval) throws MaryJaneStreamNotFoundException {
 	getStreamHandler(streamname).setSubmitInterval(submitInterval);
     }
 
-    public static void main(String[] args) throws IOException, InterruptedException {
+    public static void main(String[] args) throws IOException, InterruptedException, MaryJaneStreamNotFoundException, MaryJaneFormatException {
         MaryJaneWriter mj = new MaryJaneWriter(new File("/tmp/maryjane"));
 
         mj.addStreamHandler("foo", "foorecord", false, false,
