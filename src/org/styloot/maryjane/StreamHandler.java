@@ -98,9 +98,6 @@ public class StreamHandler {
     public synchronized long submit() throws IOException, InterruptedException {
 	log.info(this.toString()  + " submitting file.");
 	outStream.close();
-	if (bufferedOutputStream != null)
-	    bufferedOutputStream.close();
-	fileOutputStream.close();
 
 	File stagedFile = stageFile(bufferFile);
 	uploader.queueFileForUpload(stagedFile, remoteLocation, stagedFile.getName());
@@ -142,20 +139,16 @@ public class StreamHandler {
 	    return namePrefix + "-" +timeString + "-" + UUID.randomUUID() + ".tsv";
     }
 
-    OutputStream fileOutputStream = null;
-    OutputStream bufferedOutputStream = null;
     private void newBufferFile() throws IOException {
 	outStream = null;
 	bufferFile = getFileFromLocalDir();
 	recordsWritten = countLines(bufferFile);
-	if (noMemoryBuffer) {
-	    fileOutputStream = new FileOutputStream(bufferFile, true);
-	    outStream = new PrintStream(fileOutputStream);
-	} else {
-	    fileOutputStream = new FileOutputStream(bufferFile, true);
-	    bufferedOutputStream = new BufferedOutputStream(fileOutputStream);
-	    outStream = new PrintStream(bufferedOutputStream);
-	}
+	OutputStream outputStream = new FileOutputStream(bufferFile, true);
+	if (!noMemoryBuffer)
+	    outputStream = new BufferedOutputStream(outputStream);
+	if (useCompression)
+	    outputStream = new GZIPOutputStream(outputStream);
+	outStream = new PrintStream(outputStream);
     }
 
     private File getFileFromLocalDir() throws IOException {
@@ -163,7 +156,10 @@ public class StreamHandler {
 	if (oldFiles.length > 0) {
 	    return oldFiles[0];
 	} else {
-	    return File.createTempFile(namePrefix, ".tsv", dataPath());
+	    if (useCompression)
+		return File.createTempFile(namePrefix, ".tsv.gz", dataPath());
+	    else
+		return File.createTempFile(namePrefix, ".tsv", dataPath());
 	}
     }
 
@@ -191,30 +187,13 @@ public class StreamHandler {
 
 
     private File stageFile(File inFile) throws IOException {
-	if (useCompression) {
-	    File stagedFile = new File(stagingPath(), fileNameString(useCompression));
-	    FileOutputStream stagedFileOutput = new FileOutputStream(stagedFile);
-	    GZIPOutputStream gzipStagedFileOutput = new GZIPOutputStream(stagedFileOutput);
-	    FileInputStream fileInput = new FileInputStream(inFile);
-	    byte[] buffer = new byte[4086];
-	    int bytesRead = fileInput.read(buffer);
-	    while (bytesRead > 0) {
-		gzipStagedFileOutput.write(buffer,0,bytesRead);
-		bytesRead = fileInput.read(buffer);
-	    }
-	    gzipStagedFileOutput.close();
-	    stagedFileOutput.close();
-	    inFile.delete();
-	    return stagedFile;
-	} else {
-	    File stagedFile = new File(stagingPath(), fileNameString(useCompression));
-	    if (!inFile.renameTo(stagedFile)) {
-		log.error("Unable to move file " + inFile + " to staging area " + stagedFile + ". Data may NOT be committed to the database.");
-		throw new IOException("Unable to move file " + inFile + " to staging area " + stagedFile + ".");
-	    }
-	    log.debug("Successfully copied file " + inFile + " to " + stagedFile);
-	    return stagedFile;
+	File stagedFile = new File(stagingPath(), fileNameString(useCompression));
+	if (!inFile.renameTo(stagedFile)) {
+	    log.error("Unable to move file " + inFile + " to staging area " + stagedFile + ". Data may NOT be committed to the database.");
+	    throw new IOException("Unable to move file " + inFile + " to staging area " + stagedFile + ".");
 	}
+	log.debug("Successfully copied file " + inFile + " to " + stagedFile);
+	return stagedFile;
     }
 
     private Thread submitHeartbeat = null;
