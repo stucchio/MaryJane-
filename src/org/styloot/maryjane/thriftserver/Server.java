@@ -20,7 +20,7 @@ public class Server {
     private int port;
     private MaryJaneWriter writer;
 
-    public Server(int myPort, File localPath, Path basePath, JSONObject json) throws IOException, MaryJaneStreamNotFoundException {
+    public Server(int myPort, File localPath, Path basePath, JSONObject json) throws IOException, InterruptedException, MaryJaneStreamNotFoundException {
 	port = myPort;
 	log.info("Starting MaryJane server on port " + myPort);
 	System.out.println(json);
@@ -56,9 +56,15 @@ public class Server {
 	    if (submitInterval != null)
 		writer.setSubmitInterval(name, submitInterval);
 	    Long maxRecords = (Long)stream.get("max_records");
-	    if (maxRecords != null)
+	    if (maxRecords != null) {
 		writer.setRecordsBeforeSubmit(name, maxRecords);
+	    }
+	    Long maxFileSize = (Long)stream.get("max_file_size");
+	    if (maxFileSize != null)
+		writer.setFileSizeLimit(name, maxFileSize);
+
 	    log.info("Streaming data for streamname " + name + " to " + targetPath);
+
 	}
     }
 
@@ -114,7 +120,7 @@ public class Server {
 	    return getPathRoot(parent);
     }
 
-    public static void main(String[] args) throws IOException, MaryJaneStreamNotFoundException {
+    public static void main(String[] args) throws IOException, InterruptedException, MaryJaneStreamNotFoundException {
  	int port = new Integer(args[0]);
 	File localPath = new File(args[1]);
 

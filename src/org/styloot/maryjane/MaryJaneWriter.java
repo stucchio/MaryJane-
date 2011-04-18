@@ -42,7 +42,7 @@ public class MaryJaneWriter {
 	}
     }
 
-    public void addStreamHandler(String name, String prefix, boolean compress, boolean noBuffer, RemoteLocation remoteLocation) throws IOException {
+    public void addStreamHandler(String name, String prefix, boolean compress, boolean noBuffer, RemoteLocation remoteLocation) throws IOException, InterruptedException {
 	if (streams.containsKey(name))
 	    throw new IndexOutOfBoundsException("MaryJaneWriter already has a StreamHandler with name " + name);
         StreamHandler sh = new StreamHandler(name, fileUploader, prefix, compress, localDir, noBuffer, remoteLocation);
@@ -60,8 +60,12 @@ public class MaryJaneWriter {
         getStreamHandler(streamname).setRecordsBeforeSubmit(records);
     }
 
+    public void setFileSizeLimit(String streamname, long sizeLimit) throws MaryJaneStreamNotFoundException {
+        getStreamHandler(streamname).setFileSizeLimit(sizeLimit);
+    }
+
     //Set submit interval, in seconds.
-    public synchronized void setSubmitInterval(String streamname, long submitInterval) throws MaryJaneStreamNotFoundException {
+    public void setSubmitInterval(String streamname, long submitInterval) throws MaryJaneStreamNotFoundException {
 	getStreamHandler(streamname).setSubmitInterval(submitInterval);
     }
 

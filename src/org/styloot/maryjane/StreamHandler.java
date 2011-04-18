@@ -31,6 +31,7 @@ public class StreamHandler {
     private long lastSubmitTime = 0;
     private long submitInterval = 60*60*1000;
     private long recordsBeforeSubmit = -1;
+    private long fileSizeLimit = -1;
 
     private static long OFFER_TIMEOUT = 500;
 
@@ -73,7 +74,18 @@ public class StreamHandler {
 	outStream.println(key + "\t" + value);
 	long time = System.currentTimeMillis();
 	recordsWritten += 1;
+
+	boolean submitNow = false;
 	if (recordsBeforeSubmit > 0 && recordsWritten > recordsBeforeSubmit) {
+	    log.info("Records in " + toString() + " have exceeded max records. Will now submit.");
+	    submitNow = true;
+	}
+	if (fileSizeLimit > 0 && (recordsWritten % 1000 == 0) && bufferFile.length() > fileSizeLimit) { //Don't check length of file every write, is expensive call
+	    log.info("File size in " + toString() + " have exceeded max file size. Will now submit.");
+	    submitNow = true;
+	}
+
+	if (submitNow) {
 	    try {
 		submit();
 	    } catch (InterruptedException e) {
@@ -95,6 +107,30 @@ public class StreamHandler {
 	newBufferFile();
 	lastSubmitTime = System.currentTimeMillis();
 	return lastSubmitTime;
+    }
+
+    public synchronized void setRecordsBeforeSubmit(long records) {
+	recordsBeforeSubmit = records;
+    }
+
+    public synchronized void setFileSizeLimit(long sizeLimit) {
+	fileSizeLimit = sizeLimit;
+    }
+
+    //Set submit interval, in seconds.
+    public synchronized void setSubmitInterval(long mySubmitInterval) {
+	if (mySubmitInterval == submitInterval)
+	    return;
+
+	submitInterval = 1000*mySubmitInterval; //Convert from seconds to milliseconds
+
+	if (submitInterval > 0 && submitHeartbeat == null) {
+	    submitHeartbeat = new Thread(new SubmitHeartbeat());
+	    submitHeartbeat.start();
+	}
+	if (submitInterval == -1 && submitHeartbeat != null) {
+	    submitHeartbeat.interrupt();
+	}
     }
 
     private static SimpleDateFormat fileDateFormat = new SimpleDateFormat("yyyy_MM_dd_'at'_HH_mm_ss_z");
@@ -181,35 +217,6 @@ public class StreamHandler {
 	}
     }
 
-    private static String validateString(String s) throws MaryJaneFormatException  {
-	if (s.indexOf("\n") != -1)
-	    throw new MaryJaneFormatException("String '" + s + "' contained newline at character " + s.indexOf("\n"));
-
-	if ((s.indexOf("\t") != -1))
-	    throw new MaryJaneFormatException("String '" + s + "' contained tab at character " + s.indexOf("\t"));
-	return s;
-    }
-
-    public synchronized void setRecordsBeforeSubmit(long records) {
-	recordsBeforeSubmit = records;
-    }
-
-    //Set submit interval, in seconds.
-    public synchronized void setSubmitInterval(long mySubmitInterval) {
-	if (mySubmitInterval == submitInterval)
-	    return;
-
-	submitInterval = 1000*mySubmitInterval; //Convert from seconds to milliseconds
-
-	if (submitInterval > 0 && submitHeartbeat == null) {
-	    submitHeartbeat = new Thread(new SubmitHeartbeat());
-	    submitHeartbeat.start();
-	}
-	if (submitInterval == -1 && submitHeartbeat != null) {
-	    submitHeartbeat.interrupt();
-	}
-    }
-
     private Thread submitHeartbeat = null;
 
     private class SubmitHeartbeat implements Runnable {
@@ -240,6 +247,15 @@ public class StreamHandler {
 	    if (nextSubmit > time)
 		Thread.sleep(nextSubmit - time);
 	}
+    }
+
+    private static String validateString(String s) throws MaryJaneFormatException  {
+	if (s.indexOf("\n") != -1)
+	    throw new MaryJaneFormatException("String '" + s + "' contained newline at character " + s.indexOf("\n"));
+
+	if ((s.indexOf("\t") != -1))
+	    throw new MaryJaneFormatException("String '" + s + "' contained tab at character " + s.indexOf("\t"));
+	return s;
     }
 
     public static void main(String[] args) throws IOException, InterruptedException, MaryJaneFormatException {
