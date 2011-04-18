@@ -74,9 +74,7 @@ List of options
 
 For example, if submit_interval = 3600, then records will be uploaded to hadoop every hour.
 
-* max_records (int) - number of records between submissions.
-
-If max_records = 5000, then every time the number of records exceeds 5000, the file will be submitted to hadoop. If both submit_interval and max_records are specified, then both will apply. I.e., a file will be uploaded to HDFS every 5000 records or 1 hour, whichever occurs earliest (assuming submit_interval=3600 and max_records=5000).
+* max_records (int) - number of records between submissions. If max_records = 5000, then every time the number of records exceeds 5000, the file will be submitted to hadoop. If both submit_interval and max_records are specified, then both will apply. I.e., a file will be uploaded to HDFS every 5000 records or 1 hour, whichever occurs earliest (assuming submit_interval=3600 and max_records=5000).
 
 * max_file_size (int) - when the size of the file exceeds this number (in bytes), the file will be submitted. This number should only be interpreted *approximately* - if you set max_file_size to 1048576, there is a good chance the file that is submitted will be somewhat larger than 1048576.
 
