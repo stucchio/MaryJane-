@@ -20,7 +20,7 @@ public class Server {
     private int port;
     private MaryJaneWriter writer;
 
-    public Server(int myPort, File localPath, Path basePath, JSONObject json) throws IOException {
+    public Server(int myPort, File localPath, Path basePath, JSONObject json) throws IOException, MaryJaneStreamNotFoundException {
 	port = myPort;
 	log.info("Starting MaryJane server on port " + myPort);
 	System.out.println(json);
@@ -79,7 +79,7 @@ public class Server {
             MaryJane.Processor processor = new MaryJane.Processor(new MaryJaneServerImpl(writer));
             Factory protFactory = new TBinaryProtocol.Factory(true, true);
             TServer server = new TThreadPoolServer(processor, serverTransport, protFactory);
-            System.out.println("Starting server on port 10289 ...");
+            log.info("MaryJane server listening on port 10289");
             server.serve();
         }
         catch(TTransportException e) {
@@ -114,14 +114,13 @@ public class Server {
 	    return getPathRoot(parent);
     }
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws IOException, MaryJaneStreamNotFoundException {
  	int port = new Integer(args[0]);
 	File localPath = new File(args[1]);
 
 	Path configPath = new Path(args[2]);
 
 	String configString = readFile(configPath);
-	System.out.println(configString);
 	JSONObject config = (JSONObject)JSONValue.parse(configString);
 
         Server srv = new Server(port, localPath, getPathRoot(configPath), config);

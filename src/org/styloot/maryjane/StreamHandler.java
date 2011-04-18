@@ -8,6 +8,7 @@ import java.util.*;
 import java.text.*;
 import java.util.concurrent.*;
 import java.io.*;
+import java.util.zip.*;
 
 import org.styloot.maryjane.gen.*;
 
@@ -33,7 +34,7 @@ public class StreamHandler {
 
     private static long OFFER_TIMEOUT = 500;
 
-    public StreamHandler(String myName, FileUploader myUploader, String myPrefix, boolean compress, File localDir, boolean noBuffer, RemoteLocation myRemoteLocation) throws IOException {
+    public StreamHandler(String myName, FileUploader myUploader, String myPrefix, boolean compress, File localDir, boolean noBuffer, RemoteLocation myRemoteLocation) throws IOException, InterruptedException {
 	name = myName;
 	uploader = myUploader;
         namePrefix = myPrefix;
@@ -51,6 +52,14 @@ public class StreamHandler {
 	localStagingPath.mkdirs();
 
 	newBufferFile();
+
+	//Submit any files which are in the staging directory.
+	File[] stagedFiles = stagingPath().listFiles();
+	if (stagedFiles.length > 0)
+	    log.warn("Found staged files in " + stagingPath() + ", will upload them now.");
+	for (File stagedFile : stagedFiles) {
+	    uploader.queueFileForUpload(stagedFile, remoteLocation, stagedFile.getName());
+	}
     }
 
     public String toString() {
@@ -89,9 +98,12 @@ public class StreamHandler {
     }
 
     private static SimpleDateFormat fileDateFormat = new SimpleDateFormat("yyyy_MM_dd_'at'_HH_mm_ss_z");
-    private String fileNameString() {
+    private String fileNameString(boolean compress) {
 	String timeString = fileDateFormat.format(new Date(), new StringBuffer(), new FieldPosition(0)).toString();
-	return namePrefix + "-" +timeString + "-" + UUID.randomUUID() + ".tsv";
+	if (compress)
+	    return namePrefix + "-" +timeString + "-" + UUID.randomUUID() + ".tsv.gz";
+	else
+	    return namePrefix + "-" +timeString + "-" + UUID.randomUUID() + ".tsv";
     }
 
     OutputStream fileOutputStream = null;
@@ -143,13 +155,30 @@ public class StreamHandler {
 
 
     private File stageFile(File inFile) throws IOException {
-	File stagedFile = new File(stagingPath(), fileNameString());
-	if (!inFile.renameTo(stagedFile)) {
-	    log.error("Unable to move file " + inFile + " to staging area " + stagedFile + ". Data may NOT be committed to the database.");
-	    throw new IOException("Unable to move file " + inFile + " to staging area " + stagedFile + ".");
+	if (useCompression) {
+	    File stagedFile = new File(stagingPath(), fileNameString(useCompression));
+	    FileOutputStream stagedFileOutput = new FileOutputStream(stagedFile);
+	    GZIPOutputStream gzipStagedFileOutput = new GZIPOutputStream(stagedFileOutput);
+	    FileInputStream fileInput = new FileInputStream(inFile);
+	    byte[] buffer = new byte[4086];
+	    int bytesRead = fileInput.read(buffer);
+	    while (bytesRead > 0) {
+		gzipStagedFileOutput.write(buffer,0,bytesRead);
+		bytesRead = fileInput.read(buffer);
+	    }
+	    gzipStagedFileOutput.close();
+	    stagedFileOutput.close();
+	    inFile.delete();
+	    return stagedFile;
+	} else {
+	    File stagedFile = new File(stagingPath(), fileNameString(useCompression));
+	    if (!inFile.renameTo(stagedFile)) {
+		log.error("Unable to move file " + inFile + " to staging area " + stagedFile + ". Data may NOT be committed to the database.");
+		throw new IOException("Unable to move file " + inFile + " to staging area " + stagedFile + ".");
+	    }
+	    log.debug("Successfully copied file " + inFile + " to " + stagedFile);
+	    return stagedFile;
 	}
-	log.debug("Successfully copied file " + inFile + " to " + stagedFile);
-	return stagedFile;
     }
 
     private static String validateString(String s) throws MaryJaneFormatException  {
@@ -235,5 +264,7 @@ public class StreamHandler {
 	}
 	System.out.println("Finished submitting...");
     }
+
+
 
 }
