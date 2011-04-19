@@ -1,3 +1,4 @@
+========
 MaryJane
 ========
 
@@ -82,6 +83,8 @@ For example, if submit_interval = 3600, then records will be uploaded to hadoop 
 
 * no_buffer (boolean) - whether or not to write every record to the *local* disk. If no_buffer = false, then records may be lost if the server crashes. If no_buffer is set to true, performance will be reduced. False by default.
 
+* flush_interval (int) - data will be synced to the disk every flush_interval milliseconds. This has no effect if no_buffer is set to true. Default = 5000 (5 seconds).
+
 Client
 ------
 
@@ -120,9 +123,9 @@ The interface is defined by Apache Thrift, so this should be easy. Just add an a
 
 Most Styloot projects have fashion related names.
 
-[Wikipedia entry](http://en.wikipedia.org/wiki/Mary_Jane_(shoe))
+http://en.wikipedia.org/wiki/Mary_Jane_(shoe)
 
-[Google image search](http://www.google.com/images?um=1&hl=en&tbm=isch&sa=X&ei=1fKqTfWUPOXUiAK9xIGODw&ved=0CDMQBSgA&q=mary+jane+shoe&spell=1&biw=1198&bih=675)
+http://www.google.com/images?um=1&hl=en&tbm=isch&sa=X&ei=1fKqTfWUPOXUiAK9xIGODw&ved=0CDMQBSgA&q=mary+jane+shoe&spell=1&biw=1198&bih=675
 
 * How does MaryJane compare to Flume?
 

@@ -69,6 +69,10 @@ public class MaryJaneWriter {
 	getStreamHandler(streamname).setSubmitInterval(submitInterval);
     }
 
+    public void setFlushInterval(String streamname, long interval) throws MaryJaneStreamNotFoundException {
+	getStreamHandler(streamname).setFlushInterval(interval);
+    }
+
     public static void main(String[] args) throws IOException, InterruptedException, MaryJaneStreamNotFoundException, MaryJaneFormatException {
         MaryJaneWriter mj = new MaryJaneWriter(new File("/tmp/maryjane"));
 

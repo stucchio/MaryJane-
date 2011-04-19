@@ -55,6 +55,9 @@ public class Server {
 	    Long submitInterval = (Long)stream.get("submit_interval");
 	    if (submitInterval != null)
 		writer.setSubmitInterval(name, submitInterval);
+	    Long flushInterval = (Long)stream.get("flush_interval");
+	    if (flushInterval != null)
+		writer.setFlushInterval(name, flushInterval);
 	    Long maxRecords = (Long)stream.get("max_records");
 	    if (maxRecords != null) {
 		writer.setRecordsBeforeSubmit(name, maxRecords);

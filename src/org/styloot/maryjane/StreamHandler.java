@@ -34,6 +34,7 @@ public class StreamHandler {
     private long fileSizeLimit = -1;
 
     private static long OFFER_TIMEOUT = 500;
+    private long flushInterval = 5000;
 
     public StreamHandler(String myName, FileUploader myUploader, String myPrefix, boolean compress, File localDir, boolean noBuffer, RemoteLocation myRemoteLocation) throws IOException, InterruptedException {
 	name = myName;
@@ -61,6 +62,9 @@ public class StreamHandler {
 	for (File stagedFile : stagedFiles) {
 	    uploader.queueFileForUpload(stagedFile, remoteLocation, stagedFile.getName());
 	}
+
+	//Start the worker thread
+	startWorkerThread();
     }
 
     public String toString() {
@@ -114,20 +118,15 @@ public class StreamHandler {
 	fileSizeLimit = sizeLimit;
     }
 
+    public synchronized void setFlushInterval(long interval) {
+	flushInterval = interval;
+    }
+
     //Set submit interval, in seconds.
     public synchronized void setSubmitInterval(long mySubmitInterval) {
 	if (mySubmitInterval == submitInterval)
 	    return;
-
 	submitInterval = 1000*mySubmitInterval; //Convert from seconds to milliseconds
-
-	if (submitInterval > 0 && submitHeartbeat == null) {
-	    submitHeartbeat = new Thread(new SubmitHeartbeat());
-	    submitHeartbeat.start();
-	}
-	if (submitInterval == -1 && submitHeartbeat != null) {
-	    submitHeartbeat.interrupt();
-	}
     }
 
     private static SimpleDateFormat fileDateFormat = new SimpleDateFormat("yyyy_MM_dd_'at'_HH_mm_ss_z");
@@ -196,35 +195,49 @@ public class StreamHandler {
 	return stagedFile;
     }
 
-    private Thread submitHeartbeat = null;
+    private void startWorkerThread() {
+	if (workerThread == null){
+	    workerThread = new Thread(new WorkerThread());
+	    workerThread.start();
+	}
+    }
 
-    private class SubmitHeartbeat implements Runnable {
+    private Thread workerThread = null;
+    private class WorkerThread implements Runnable {
 	public void run() {
-	    log.info("Starting heartbeat thread. " + toString() + " will submit data (when available) every " + submitInterval + "ms.");
-	    try {
-		while (true) {
-		    sleepUntilNextSubmit();
-		    if (recordsWritten > 0) {
-			submit();
-			log.info(toString() + " submitting data, triggered by time.");
-		    }
-		    else {
-			lastSubmitTime = System.currentTimeMillis();
-			log.info(toString() + " submitting data, triggered by time. Skipping upload since no data to submit.");
-		    }
+	    log.info("Starting worker thread for  " + StreamHandler.this.toString() + ".");
+	    while (true) {
+		try {
+		    long time = System.currentTimeMillis();
+		    submitIfNecessary(time);
+		    outStream.flush();
+		    Thread.sleep(Math.min(flushInterval, lastSubmitTime + submitInterval - time));
+		} catch (InterruptedException e) {
+		    log.error("Worked thread for " + StreamHandler.this.toString() + " interrupted. ", e);
+		} catch (Exception e) {
+		    log.error("Worker thread for  " + StreamHandler.this.toString() + " encountered a completely unexpected error. Please notify the maintainer of MaryJane.");
 		}
-	    } catch (InterruptedException e) {
-		return;
-	    } catch (IOException e) {
-		log.error(toString() + " failed to submit data. Will retry on next heartbeat.");
 	    }
 	}
 
-	private void sleepUntilNextSubmit() throws InterruptedException {
-	    long time = System.currentTimeMillis();
-	    long nextSubmit = lastSubmitTime + submitInterval;
-	    if (nextSubmit > time)
-		Thread.sleep(nextSubmit - time);
+	private void submitIfNecessary(long time) {
+	    //Submit based on submit interval
+	    if (submitInterval > 0 && time > lastSubmitTime + submitInterval) {
+		if (recordsWritten > 0) {
+		    try {
+			submit();
+			log.info(toString() + " submitting data, triggered by time.");
+		    } catch (IOException e) {
+			log.error(StreamHandler.this.toString() + " failed to submit on designated submit interval. IOException encountered.", e);
+		    } catch (InterruptedException e) {
+			log.error(StreamHandler.this.toString() + " failed to submit on designated submit interval. InterruptedException encountered.", e);
+		    }
+		}
+		else {
+		    lastSubmitTime = System.currentTimeMillis();
+		    log.info(StreamHandler.this.toString() + " submitting data, triggered by time. Skipping upload since no data to submit.");
+		}
+	    }
 	}
     }
 
