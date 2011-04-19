@@ -15,12 +15,12 @@ Apache Thrift
 Installation
 ============
 
-The server installation is easy:
+The server installation is easy::
 
     $ ./build.sh
     $ cp build/maryjane.jar SOMEPLACE_IN_CLASSPATH
 
-The python client installation is similarly easy:
+The python client installation is similarly easy::
 
     $ mv build/python-maryjane.tgz /tmp
     $ cd /tmp
@@ -34,7 +34,7 @@ Maryjane is run as follows:
 
     $ java org.styloot.maryjane.thriftserver.Server PORT LOCALDIR PATH_TO_CONFIGURATION
 
-The configuration is a JSON file stored on the remote filesystem. So, for example, suppose we have the following config file at hdfs://namenode/maryjane/config.json :
+The configuration is a JSON file stored on the remote filesystem. So, for example, suppose we have the following config file at hdfs://namenode/maryjane/config.json ::
 
     {
       "streams" : {
@@ -51,7 +51,7 @@ The configuration is a JSON file stored on the remote filesystem. So, for exampl
 
 This will create two *streams* - one named "mary" and one named "jane". Data can be submitted to them via the addRecord(streamname, key, value) method in the thrift interface.
 
-Suppose the command addRecord("mary", "foo", "bar") is called. This will result (eventually) in the following:
+Suppose the command addRecord("mary", "foo", "bar") is called. This will result (eventually) in the following::
 
     $ hadoop fs -ls hdfs://namenode/maryjane/mary
     ...
@@ -71,24 +71,22 @@ The parameter "submit_interval" is the number of seconds between submissions. By
 List of options
 ---------------
 
-* submit_interval (int) - number of seconds between submissions.
+* `submit_interval` (int) - number of seconds between submissions. For example, if `submit_interval` = 3600, then records will be uploaded to hadoop every hour.
 
-For example, if submit_interval = 3600, then records will be uploaded to hadoop every hour.
+* `max_records` (int) - number of records between submissions. If `max_records` = 5000, then every time the number of records exceeds 5000, the file will be submitted to hadoop. If both `submit_interval` and `max_records` are specified, then both will apply. I.e., a file will be uploaded to HDFS every 5000 records or 1 hour, whichever occurs earliest (assuming `submit_interval` = 3600 and `max_records` = 5000).
 
-* max_records (int) - number of records between submissions. If max_records = 5000, then every time the number of records exceeds 5000, the file will be submitted to hadoop. If both submit_interval and max_records are specified, then both will apply. I.e., a file will be uploaded to HDFS every 5000 records or 1 hour, whichever occurs earliest (assuming submit_interval=3600 and max_records=5000).
+* `max_file_size` (int) - when the size of the file exceeds this number (in bytes), the file will be submitted. This number should only be interpreted *approximately* - if you set `max_file_size` to 1048576, there is a good chance the file that is submitted will be somewhat larger than 1048576.
 
-* max_file_size (int) - when the size of the file exceeds this number (in bytes), the file will be submitted. This number should only be interpreted *approximately* - if you set max_file_size to 1048576, there is a good chance the file that is submitted will be somewhat larger than 1048576.
+* `compress` (boolean) - whether to gzip the files before submission. False by default.
 
-* compress (boolean) - whether to gzip the files before submission. False by default.
+* `no_buffer` (boolean) - whether or not to write every record to the *local* disk. If `no_buffer = false`, then records may be lost if the server crashes. If no_buffer is set to true, performance will be reduced. False by default.
 
-* no_buffer (boolean) - whether or not to write every record to the *local* disk. If no_buffer = false, then records may be lost if the server crashes. If no_buffer is set to true, performance will be reduced. False by default.
-
-* flush_interval (int) - data will be synced to the disk every flush_interval milliseconds. This has no effect if no_buffer is set to true. Default = 5000 (5 seconds).
+* `flush_interval` (int) - data will be synced to the disk every `flush_interval` milliseconds. This has no effect if no_buffer is set to true. Default = 5000 (5 seconds).
 
 Client
 ------
 
-See the thrift file for reference. An example in python:
+See the thrift file for reference. An example in python::
 
     from thrift import Thrift
     from thrift.transport import TSocket
@@ -115,7 +113,7 @@ Frequently Asked Questions
 
 * What about languages other than Java and Python?
 
-The interface is defined by Apache Thrift, so this should be easy. Just add an appropriate namespace to the thrift file, and run the command:
+The interface is defined by Apache Thrift, so this should be easy. Just add an appropriate namespace to the thrift file, and run the command::
 
     $ thrift --gen YOUR_LANG maryjane.thrift
 
