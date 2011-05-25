@@ -84,11 +84,11 @@ public class Server {
     private void start() {
 
         try {
-            TServerSocket serverTransport = new TServerSocket(10289);
+            TServerSocket serverTransport = new TServerSocket(port);
             MaryJane.Processor processor = new MaryJane.Processor(new MaryJaneServerImpl(writer));
             Factory protFactory = new TBinaryProtocol.Factory(true, true);
             TServer server = new TThreadPoolServer(processor, serverTransport, protFactory);
-            log.info("MaryJane server listening on port 10289");
+            log.info("MaryJane server listening on port " + port);
             server.serve();
         }
         catch(TTransportException e) {
