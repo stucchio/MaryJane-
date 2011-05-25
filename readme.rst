@@ -10,18 +10,21 @@ Dependencies
 
 Hadoop 0.20 (may work with earlier versions)
 log4j (Usually comes with Hadoop)
-Apache Thrift
+Apache Thrift 0.5
+
+MaryJane will not work with Thrift 0.6 (yet). It probably won't work with Thrift 0.4 ever, though I haven't tried.
 
 Installation
 ============
 
 The server installation is easy::
 
-    $ ./build.sh
+    $ ant compile jar
     $ cp build/maryjane.jar SOMEPLACE_IN_CLASSPATH
 
 The python client installation is similarly easy::
 
+    $ ant python
     $ mv build/python-maryjane.tgz /tmp
     $ cd /tmp
     $ tar -xvzf python-maryjane.tgz

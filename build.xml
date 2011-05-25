@@ -1,27 +1,47 @@
 <project name="maryjane" default="tserver" basedir=".">
-  <description>Time Server Tutorial</description>
+  <description>Mary Jane Server</description>
 
   <property name="src" location="src" />
   <property name="gen" location="gen-java" />
   <property name="build" location="build" />
-  <property name="cpath" location="/usr/local/lib/libthrift.jar" />
+
+  <path id="classpath">
+        <fileset dir="/usr/lib/jvm/java-6-sun/lib/" includes="**/*.jar"/>
+        <fileset dir="/usr/local/lib/" includes="**/*.jar"/>
+        <fileset dir="/usr/lib/hadoop/" includes="**/*.jar"/>
+        <fileset dir="/usr/lib/hadoop/lib/" includes="**/*.jar"/>
+        <fileset dir="/usr/local/lib/" includes="libthrift.jar"/>
+    </path>
+
 
   <target name="init">
     <tstamp />
     <mkdir dir="${build}"/>
   </target>
 
-  <target name="compile" depends="init">
-    <javac srcdir="${gen}" destdir="${build}" classpath="${cpath}" >
-      <compilerarg value="-Xlint:deprecation"/>
-    </javac>
-    <javac srcdir="${src}" destdir="${build}" classpath="${cpath}:${gen}" >
-      <compilerarg value="-Xlint:deprecation"/>
-    </javac>
+  <target name="python" depends="init">
+    <exec executable="thrift"> <arg value="--gen"/> <arg value="py"/> <arg value="maryjane.thrift"/> </exec>
+    <exec executable="tar"> <arg value="czf"/> <arg value="build/python-maryjane.tgz"/> <arg value="-c"/> <arg value="gen-py"/> </exec>
+    <delete dir="gen-py"/>
   </target>
 
-  <target name="maryjane" depends="compile">
-    <jar jarfile="maryjane.jar" basedir="${build}"/>
+  <target name="thriftcode" depends="init">
+    <exec executable="thrift"> <arg value="--gen"/> <arg value="java"/> <arg value="maryjane.thrift"/> </exec>
+    <exec executable="build_scripts/remove_slf4j.sh"/>
+  </target>
+
+  <target name="compile" depends="init,thriftcode">
+    <javac srcdir="${gen}" destdir="${build}" classpathref="classpath" >
+      <compilerarg value="-Xlint:deprecation"/>
+    </javac>
+    <javac srcdir="${src}" destdir="${build}" classpathref="classpath" >
+      <compilerarg value="-Xlint:deprecation"/>
+    </javac>
+    <delete dir="gen-java"/>
+  </target>
+
+  <target name="jar" depends="compile">
+    <jar jarfile="build/maryjane.jar" basedir="${build}"/>
   </target>
 
   <target name="clean">
